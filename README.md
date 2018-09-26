@@ -1,14 +1,10 @@
 Fast-Food-Fast-API
 FastFood API is a REST API that fetches that allows its user to order for food
 
-[![Build Status] (https://travis-ci.org/misatifelix/fast-food-fast-api.svg?branch=master
+[![Build Status](https://travis-ci.org/misatifelix/fast-food-fast-api.svg?branch=master)](https://travis-ci.org/misatifelix/fast-food-fast-api)
 
 
 This is a list of resources for people who are new to contributing to open source.
-
-
-
-
 
 Flask FAST FOOD FAST
 This is a Flask Restful API for an app that allows customers to place orders
