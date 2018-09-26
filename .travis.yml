@@ -1,0 +1,20 @@
+language: python 
+
+before install:
+  - export APP_SETTINGS="testing"
+
+python: 
+  - "3.6"
+
+
+
+install: 
+  - pip install -r requirements.txt
+  - pip install coveralls 
+  - pip install nose
+
+script: 
+  - nosetests  --with-coverage --cover-package=.
+
+after_success:
+  - "coveralls"
