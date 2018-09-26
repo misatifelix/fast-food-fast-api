@@ -46,8 +46,8 @@ Endpoint	Method	description
 /api/v1/logout	POST	User logout
 API Endpoints
 
-#Endpoint  #Methods  #Description  Auth Required
-----       
+#Endpoint|  #Methods|  #Description| Auth Required|
+------------------------------------------------    
 
 /api/v1/foods|GET	|list all foods|	No
 
