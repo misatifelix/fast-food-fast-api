@@ -1,0 +1,880 @@
+source thevenv/bin/activate 
+export FLASK_APP="run.py"
+export APP_SETTINGS="development"
+export SECRET_KEY="3#ksk//p[]]hshsdkask^&8" 
+  
+9  app/__init__.py
+@@ -1,11 +1,14 @@
+ from flask_restful import Api
+from flask import Flask 
+from flask_jwt_extended import JWTManager
+import os
+from instance.config import app_config 
+ # import resources
+from .api.v1.resources.orders import (OrderListResource, OrderResource)
+from .api.v1.resources.foods import (FoodListResource, FoodResource, ChangePriceResource)
+from .api.v1.resources.auth import RegisterResource, LoginResource, LogoutResource
+ def create_app(config_name): 
+    """
+         creates the app and registers the endpoints
+     """
+     #initialize flask
+     app = Flask(__name__, instance_relative_config=True) 
+     # add configs
+    app.config.from_object(app_config[config_name])
+    app.config.from_pyfile('config.py')
+    #add the prefix
+     jwt = JWTManager(app)
+     api = Api(app, prefix='/api/v1')
+     #register the endpoints
+     api.add_resource(OrderListResource, '/orders')
+     api.add_resource(OrderResource, '/orders/<int:id>')
+    api.add_resource(FoodListResource, '/foods')
+    api.add_resource(FoodResource, '/foods/<int:id>')
+    api.add_resource(ChangePriceResource, '/foods/<string:name>')
+    api.add_resource(RegisterResource, '/register')
+    api.add_resource(LoginResource, '/login')
+    api.add_resource(LogoutResource,'/logout')
+    return app 
+  
+0  app/api/v1/models/__init__.py
+No changes.
+  
+35  app/api/v1/models/auth_models.py
+@@ -0,0 +1,35 @@
+from .base import BaseModel
+ class UserModel(BaseModel):
+    """
+    User Model
+    """
+    def __init__(self):
+        self.users = []
+        self.blacklist= []
+     def get_all_users(self):
+        return self.users
+    def get_all_tokens(self):
+        return self.blacklist
+    #add a user to table
+    def add_user(self,data):
+        self.users.append(data)
+     #add token to table
+    def add_to_black_list(self,data):
+        self.blacklist.append(data)
+        return data
+     def get_by_name(self, name,data):
+        return next(filter(lambda x:x['username'] == name, data), None)
+     #get blacklist token 
+    def get_token(self, name,data):
+        return next(filter(lambda x:x['token'] == name, data), None)
+     def get_by_email(self, name,data):
+        return next(filter(lambda x:x['email'] == name, data), None)
+ user_model = UserModel()
+  
+26  app/api/v1/models/base.py
+@@ -0,0 +1,26 @@
+class BaseModel(object):
+    """
+    used to handle common model methods
+    """
+    # query by id
+    def get_by_id(self,id,data):
+        return next(filter(lambda x:x['id'] == id, data), None)
+      #query by name
+    def get_by_name(self, name,data):
+        return next(filter(lambda x:x['name'] == name, data), None)
+      #delete 
+    def delete_item(self,id,data):
+        """
+        filter out the items that do not match id
+        """
+        return list(filter(lambda x:x['id'] != id, data))
+     # get list length for  auto-increment 
+    def get_length(self,data):
+        data_len = len(data)
+        return data_len
+    
+    
+     
+  
+90  app/api/v1/models/order_model.py
+@@ -1,8 +1,10 @@
+from .base import BaseModel
+ """
+    Database
+    List with dictionairies emulates a database table
+"""
+class OrderModel(object ):
+class OrderModel(BaseModel):
+    existing_data = []
+     def __init__(self):
+        self.orders = []
+        self.foods =  []
+     """
+     Model Managers
+     """
+     # get all orders
+     def get_orders(self):
+         return self.orders
+     
+     #get all food items
+    def get_foods(self): 
+        return self.foods
+     #populated orders data in database
+    def saved_orders_list_database(self, data):
+        for i in data:
+            ext_database = self.orders.append(i)
+        return ext_database
+     #populated foods data in database
+    def saved_food_list_database(self, data):
+        for i in data:
+            ext_food_table = self.foods.append(i)
+        return ext_food_table
+    
+    #add an order to table
+    def add_order(self,data):
+        self.orders.append(data)
+     #quert by name
+    def get_food_by_name(self, name,data):
+        return next(filter(lambda x:x['name'] == name, data), None)
+    #add a food item to table
+    def add_foods(self,data):
+        self.foods.append(data)
+     
+    #get total price
+    def calculate_total_price(self, price, quantity):
+        return price * quantity
+     # get list length for  auto-increment 
+    def get_length(self,data):
+        data_len = len(data)
+        return data_len
+     # query by id
+    def get_by_id(self,id,data):
+        return next(filter(lambda x:x['id'] == id, data), None)
+                    
+orders =[
+    {
+        "id": 1,
+        "customer": "nesh",        
+         "food": [
+            {"name": "chai", 
+            "price": 60,
+            "quantity": 2
+            },
+            {"name": "kuku", 
+            "price": 300 ,
+            "quantity": 2}
+         ], 
+         "total": 360,
+         "status": "pending"   
+    },
+    {
+        "id": 2, 
+        "customer": "nesh",       
+        "food": [
+             {"name": "chai", 
+            "price": 60,
+            "quantity": 2
+            },
+            {"name": "kuku", 
+            "price": 300 ,
+            "quantity": 2}
+        ],
+        "quantity": 3, 
+        "total": 360,
+        "status": "pending" 
+    }
+]
+ foods = [
+        {
+            "id": 1,
+            "name": "chai", 
+            "price": 60
+        },
+         {
+            "id":2,
+            "name": "kuku", 
+            "price": 300
+         }, 
+        {
+            "id":3,
+            "name": "chips",
+            "price": 200
+        }
+     ]
+ #class instance
+order_obj = OrderModel()
+ order_obj.saved_orders_list_database(orders)
+order_obj.saved_food_list_database(foods) 
+  
+78  app/api/v1/resources/auth.py
+@@ -0,0 +1,78 @@
+from flask import request
+from flask_restful import Resource, reqparse
+from werkzeug.security import safe_str_cmp
+from flask_jwt_extended import create_access_token, jwt_required
+ #local imports
+from ..models.auth_models import user_model
+ class RegisterResource(Resource):
+    
+    #get the inputs
+    parser = reqparse.RequestParser()
+    parser.add_argument('username',
+    type = str,
+    required = True)
+     parser.add_argument('password',
+    type = str,
+    required = True)
+     parser.add_argument('email',
+    type = str,
+    required = True)
+     parser.add_argument('address',
+    type = str,
+    required = True)
+     #post data
+    def post(self):
+        data = RegisterResource.parser.parse_args()
+        inc_id = user_model.get_length(user_model.get_all_users()) + 1
+        #check if usermail already used
+        if user_model.get_by_email(data['email'],user_model.get_all_users()):
+            return {"message":"a user registered by that name is already registered"}
+         user = {
+            "id":inc_id, "username":data["username"], "password":data['password'],
+            "email":data['email'], "address":data["address"]
+            
+        }
+        #append to list
+        user_model.add_user(user)
+        return user
+ class LoginResource(Resource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('username',
+    type = str,
+    required = True)
+     parser.add_argument('password',
+    type = str,
+    required = True)
+     def post(self):
+        data = LoginResource.parser.parse_args()
+        user = user_model.get_by_name(data['username'], user_model.get_all_users())
+        
+        if user and safe_str_cmp(user['password'], data['password']):
+            access_token = create_access_token(identity=user)
+            if user_model.get_token(access_token,user_model.get_all_tokens()):
+                return {'message': "user token has expired"}
+            return {"access_token":access_token}
+        elif user_model.get_length(user_model.get_all_users()) == 0:
+            return {"message":"please register"}    
+        return {"message":"invalid credentials"}, 401
+ class LogoutResource(Resource):
+    @jwt_required
+    def post(self):
+        token = request.headers.get('Authorization')
+        user_model.add_to_black_list({'token':token})
+        get_token = user_model.get_token(token,user_model.get_all_tokens())
+        if get_token:   
+            return {'message':'user has been logged out'}
+        return {'message':'invalid token'},401
+  
+34  app/api/v1/resources/foods.py
+@@ -1,6 +1,7 @@
+from flask_restful import Resource, reqparse
+from ..models.order_model import order_obj
+from flask_jwt_extended import jwt_required
+ from ..models.order_model import order_obj
+class FoodListResource(Resource):
+    
+    parser = reqparse.RequestParser()
+     parser.add_argument("name",type=str,
+     required=True)
+     parser.add_argument("price",type=int,
+    required=True)
+   
+		
+    #token required
+    @jwt_required
+    def get(self):
+        """"
+        Return foods list 
+         """
+         all_foods = order_obj.get_foods()
+         if all_foods:
+            return all_foods
+        return {"message": "no food items present"}, 404
+     @jwt_required
+    def post(self):
+        """
+        Post foods  
+        """
+        inc_id = order_obj.get_length(order_obj.get_foods()) + 1
+        data = FoodListResource.parser.parse_args()
+        food_item = order_obj.get_food_by_name(data['name'],order_obj.get_foods())
+        food_item = order_obj.get_by_name(data['name'],order_obj.get_foods())
+         if food_item:
+            return {'message': 'food item already added try another'}
+         else:
+            
+            food = {
+                'id': inc_id, 'name': data['name'], 'price':data['price']
+            }
+            order_obj.add_foods(food)
+            return food
+       
+  class FoodResource(Resource):
+     parser = reqparse.RequestParser()
+     parser.add_argument("name",type=str,
+     required=True)
+ 
+    parser.add_argument("price",type=int,
+    required=True)
+     #requires a token
+    @jwt_required
+    def get(self,id):
+        """
+        Return a specific food item by id
+       """
+         food = order_obj.get_by_id(id,order_obj.get_foods())
+         if food:
+            return food, 200
+        return {"message": "food item does not exist"}, 404
+     #requires a token
+    @jwt_required
+    def put(self,id):
+        """
+        Edit the the food item details
+         """
+         data= FoodResource.parser.parse_args()
+         food_to_edit = order_obj.get_by_id(id,order_obj.get_foods())
+         if food_to_edit:
+             food_to_edit.update(data)
+             return food_to_edit,201
+        else:
+            return {"message":"no item to update"}, 404
+    
+    #requires a token
+    @jwt_required
+    def delete(self,id):
+        """
+        deelte item
+        """
+        order_obj.delete_item(id,order_obj.get_foods())
+        return {"message":"item has been deleted"}, 202
+ #admin can alter prices
+class ChangePriceResource(Resource):
+    parser = reqparse.RequestParser()
+    parser.add_argument("price",type=int,
+    required=True)
+     #requires a token
+    @jwt_required
+    def put(self,name):
+        data = ChangePriceResource.parser.parse_args()
+        food_to_edit = order_obj.get_food_by_name(name,order_obj.get_foods())
+        food_to_edit = order_obj.get_by_name(name,order_obj.get_foods())
+        if food_to_edit:
+            food_to_edit.update(data)
+            return food_to_edit,201
+         else:
+             return {"message":"no named item in food list"}, 404
+  
+19  app/api/v1/resources/orders.py
+@@ -1,10 +1,14 @@
+ from flask_restful import Resource, reqparse
+from flask_jwt_extended import jwt_required, get_jwt_identity
+ from ..models.order_model import order_obj
+from flask import jsonify
+ class OrderListResource(Resource):
+ 	#token required 
+	@jwt_required
+	def get(self): 
+ 		"""
+ 		Return all the orders 
+ 		"""
+ 		allorders = order_obj.get_orders()
+ 		if allorders:
+ 			return allorders
+		else:
+			return {"mesage":"no orders present"}
+		
+ 	@jwt_required
+	def post(self):
+		"""
+		Post an order fields input, food, quantity, price, status
+		"""
+		current_user = get_jwt_identity()
+		inc_id = order_obj.get_length(order_obj.get_orders()) + 1
+		parser = reqparse.RequestParser()
+		parser.add_argument("food",type=str,
+ 		required=True)
+ 
+ 		parser.add_argument("quantity",type=int,
+ 		required=True)
+		data = parser.parse_args()
+		
+		#check if food is in menu
+		food_item = order_obj.get_food_by_name(data['food'],order_obj.get_foods())
+		
+		food_item = order_obj.get_by_name(data['food'],order_obj.get_foods())
+		if food_item:
+			food_price = food_item['price']   
+			total = order_obj.calculate_total_price(food_price,data['quantity'])
+			#add default order items
+			order = {
+			'id': inc_id, "customer_name":"nesh",'food':data['food'],
+			'id': inc_id, "customer_name":current_user['username'],'food':data['food'],
+			'quantity':data['quantity'],'total':total,
+			'status':"pending" 
+			}
+ 			order_obj.add_order(order)
+ 			return order, 201
+ 		else:
+ 			return {'message': 'no such food item in menu'}, 404
+ class OrderResource(Resource): 
+	#token required 
+	@jwt_required
+	def get(self,id):
+		"""
+			get a specicfic order via its id
+ 		"""
+ 		#filter list elements that do no have the id 
+ 		order = order_obj.get_by_id(id,order_obj.get_orders())
+ 		if order:
+ 			return order, 200
+ 		else:
+			message =  "order {} does not exist".format(id)
+			return {"message":message}, 404
+ 	#token required 
+	@jwt_required
+	def put(self,id):
+		"""
+			get an order by its id and update it
+ 		"""
+ 		# get input
+ 		parser = reqparse.RequestParser()
+ 		parser.add_argument("status",
+ 				type=str,
+ 				required=True,
+ 		)
+ 		data = parser.parse_args()
+ 		order_to_edit = order_obj.get_by_id(id,order_obj.get_orders())
+ 
+ 		#update order if found
+ 		if order_to_edit:
+ 			order_to_edit.update(data)
+		else:
+			return {"message":"no item to update"}, 404
+		return order_to_edit, 201
+ 	
+  
+  
+4  app/tests/v1/.pytest_cache/v/cache/lastfailed
+@@ -1 +1,3 @@
+{} 
+{
+  "test_foods.py::test_resource_foodss_all": true
+} 
+  
+15  app/tests/v1/.pytest_cache/v/cache/nodeids
+@@ -1,11 +1,8 @@
+[
+  "test_orders.py::test_resource_orders_all",
+  "test_orders.py::test_resource_order_add",
+  "test_orders.py::test_resource_order_add_without_data",
+  "test_orders.py::test_resource_add_without_quantity",
+  "test_orders.py::test_resource_add_without_food",
+  "test_orders.py::test_resource_order_get_by_id",
+  "test_orders.py::test_resource_order_get_by_id_str",
+  "test_orders.py::test_resource_order_get_by_nonexisting_id",
+  "test_orders.py::test_resource_order_edit"
+  "test_auth.py::test_register",
+  "test_auth.py::test_register_exist_data",
+  "test_auth.py::test_register_without_data",
+  "test_auth.py::test_login",
+  "test_auth.py::test_login_without_data",
+  "test_auth.py::test_login_without_password"
+] 
+  
+92  app/tests/v1/test_auth.py
+@@ -0,0 +1,92 @@
+import pytest
+import json
+from ... import create_app
+from .test_foods import headers
+ app = create_app(config_name="testing")
+client = app.test_client()
+list_for_test_data = [
+{
+"username": "misati",
+"password": "andela32",
+"email": "misatifelix@gmail.com",
+"address": "roysambu"
+},
+{
+    "username":"misati",
+    "password":"andela32"
+},
+{
+},
+{
+    "username":"misati",
+},
+{
+    "password":"andela32"
+}, 
+{
+    "username":"misati",
+    "password":"andela32"
+}, 
+{
+"username": "misati",
+"password": "andela32",
+"email": "misatifelix@gmail.com",
+"address": "roysambu"
+}
+ ]
+ #test register a new user 
+def test_register():
+    response = client.post('/api/v1/register', json=list_for_test_data[0])
+    assert response.status_code == 200
+ # #test register a new user 
+# def test_register_with_invalid_email():
+#     response = client.post('/api/v1/register', json=list_for_test_data[6])
+#     assert response.status_code == 400
+ #test register an already existing user 
+def test_register_user_exist_data():
+    response = client.post('/api/v1/register', json=list_for_test_data[0])
+    assert response.status_code == 200
+    assert 'already registered' in str(response.json)
+ #test register an already existing user 
+def test_register_without_data():
+    response = client.post('/api/v1/register', json=list_for_test_data[2])
+    assert response.status_code == 400
+ #test login 
+def test_login():
+    response = client.post('/api/v1/login', json=list_for_test_data[1])
+    assert response.status_code == 200
+ #test login without data
+def test_login_without_data():
+    response = client.post('/api/v1/login', json=list_for_test_data[2])
+    assert response.status_code == 400
+ #test login without passwrd
+def test_login_without_password():
+    response = client.post('/api/v1/login', json=list_for_test_data[3])
+    assert response.status_code == 400
+ #test login without username
+def test_login_without_username():
+    response = client.post('/api/v1/login', json=list_for_test_data[4])
+    assert response.status_code == 400
+ #test with wrong credentials
+def test_with_wrong_password():
+    response = client.post('/api/v1/login', json=list_for_test_data[5])
+    assert response.status_code == 401
+    assert 'invalid' in str(response.json)
+ #test logout
+def test_logout():
+    response = client.post('/api/v1/logout',headers=headers)
+    assert response.status_code == 200
+    assert 'logged out' in str(response.json) 
+  
+105  app/tests/v1/test_foods.py
+@@ -1,5 +1,7 @@
+ import pytest
+import json
+from flask_jwt_extended import create_access_token
+from ... import create_app
+ app = create_app(config_name="testing")
+ client = app.test_client()
+ 
+ empty_food_item= {}
+ price_less_order= {
+     "name":"maziwa"
+ }
+ 
+ name_less_order = {
+    "price": 80
+}
+ def test_resource_orders_all(): 
+food_item = {
+    "name":"maziwa",
+    "price":80
+}
+ another_item = {
+    "name": "ngwaci",
+    "price": 500
+}
+ dummy_user = {	
+    "username":"pius",
+	"email":"kevinene91@gmail.com",
+	"password":"thething",
+	"address":"rwambiti"
+}
+regsiter_data = {
+"username": "misati",
+"password": "andela32",
+"email": "misatifelix@gmail.com",
+"address": "roysambu"
+}
+login_data ={
+    "username":"misati",
+    "password":"andela32"
+}
+ def login_user():
+    client.post('api/v1/register', json=regsiter_data)
+    user = client.post('api/v1/login', json=login_data) 
+    token =  user.get_json().get('access_token')
+    return token
+ token = login_user()
+ headers = {
+    'Authorization': 'Bearer {}'.format(token),
+    'Content-Type': 'application/json'
+}
+ def test_resource_food_add(): 
+    """
+        Test post with data
+    """
+    
+    response = client.post('api/v1/foods', json=food_item, headers=headers)
+    assert response.status_code == 200
+ def test_resource_foods_all(): 
+    """
+        Test to get all orders
+     """
+    response = client.get('api/v1/foods')
+  
+    response = client.get('api/v1/foods', headers=headers)
+    assert(response.status_code == 200)
+ def test_resource_order_get_by_id(): 
+    """
+        Test to get order by its Id
+    """
+    response = client.get('api/v1/foods/1')
+    response = client.get('api/v1/foods/1', headers=headers)
+    assert(response.status_code == 200)
+ def test_resource_foods_get_by_id_str(): 
+    """
+        Test to get order but str for id
+    """
+    response = client.get('api/v1/foods/e')
+    response = client.get('api/v1/foods/e', headers=headers)
+    assert(response.status_code == 405)
+ def test_resource_foods_get_by_nonexisting_id(): 
+    """
+        Test to get order with non-existent id
+    """
+    response = client.get('api/v1/foods/4')
+    response = client.get('api/v1/foods/4', headers=headers)
+    assert 'exist' in str(response.data)
+ def test_resource_food_edit(): 
+    """
+        Test edit by geting right id
+    """
+    response = client.put('api/v1/foods/1', json ={
+        "name": "maziwa",
+        "price": 200
+    }, headers=headers)
+    assert(response.status_code == 201)
+    assert 'maziwa' in str(response.json)
+ def test_resource_food_delete():
+    """
+        Test delete item
+    """
+    client.post('api/v1/foods', data=another_item)
+    response = client.delete('api/v1/foods/1', headers=headers)
+    assert(response.status_code == 202)
+    assert 'deleted' in str(response.data)
+ def test_resource_order_add_without_data(): 
+    """
+        Test post without data
+    """
+    response = client.post('api/v1/foods', data=empty_food_item)
+    response = client.post('api/v1/foods', data=empty_food_item, headers=headers)
+    assert response.status_code == 400
+ def test_resource_add_without_name():
+    """
+        Test post withot quantity
+    """
+    response = client.post('api/v1/foods', data=name_less_order)
+    response = client.post('api/v1/foods', data=name_less_order, headers=headers)
+    assert response.status_code == 400
+ def test_resource_add_without_price():
+    """
+        Test post withot food
+    """
+    response = client.post('api/v1/foods', data=price_less_order)
+    assert response.status_code == 400
+ def test_resource_order_edit(): 
+    """
+        Test edit by geting right id
+    """
+    response = client.put('api/v1/foods/1', data ={
+        "name": "chips",
+        "price": 200
+    })
+    assert(response.status_code == 201)
+    assert 'chips' in str(response.data)
+    response = client.post('api/v1/foods', data=price_less_order, headers=headers)
+    assert response.status_code == 400 
+  
+86  app/tests/v1/test_orders.py
+@@ -1,96 +1,106 @@
+import pytest
+import json
+from ... import create_app
+from .test_foods import headers
+ app = create_app(config_name="testing")
+client = app.test_client()
+ order = {
+ order = { 
+    "food": "chips",
+    "quantity": 2, 
+    "quantity": 2
+}
+food_item = {
+    "name":"chips",
+    "price":80
+}
+ empty_order = {}
+ quantity_less_order = {
+ 
+    "food": "chips", 
+   
+    "food": "chips"  
+}
+ food_less_order = {
+    "quantity": 3, 
+}
+         
+def test_resource_orders_all(): 
+ def test_resource_food_add(): 
+    """
+        Test to get all orders
+        Test post with data
+    """
+    response = client.get('api/v1/orders')
+    assert(response.status_code == 200)
+    response = client.post('api/v1/foods', json=food_item, headers=headers)
+    assert response.status_code == 200
+ def test_resource_order_add():
+    """
+        Test to add post with appropirate data
+    """
+    response = client.post('api/v1/orders', data=order)
+    response = client.post('api/v1/orders', json=order, headers=headers)
+    assert(response.status_code == 201)
+    assert 'chips' in str(response.data)
+    assert 'chips' in str(response.json)
+ def test_resource_order_add_without_data(): 
+def test_resource_orders_all(): 
+    """
+        Test post without data
+        Test to get all orders
+    """
+    response = client.post('api/v1/orders', data=empty_order)
+    assert response.status_code == 400
+    response = client.get('api/v1/orders', headers=headers)
+    assert(response.status_code == 200)
+ def test_resource_add_without_quantity():
+    """
+        Test post withot quantity
+    """
+    response = client.post('api/v1/orders', data=quantity_less_order)
+    assert response.status_code == 400
+ def test_resource_add_without_food():
+    """
+        Test post withot food
+    """
+    response = client.post('api/v1/orders', data=food_less_order)
+    assert response.status_code == 400
+ def test_resource_order_get_by_id(): 
+    """
+        Test to get order by its Id
+    """
+    response = client.get('api/v1/orders/1')
+    response = client.get('api/v1/orders/1', headers=headers)
+    assert(response.status_code == 200)
+ def test_resource_order_get_by_id_str(): 
+    """
+        Test to get order but str for id
+    """
+    response = client.get('api/v1/orders/e')
+    response = client.get('api/v1/orders/e', headers=headers)
+    assert(response.status_code == 404)
+ def test_resource_order_get_by_nonexisting_id(): 
+    """
+        Test to get order with non-existent id
+    """
+    response = client.get('api/v1/orders/4')
+    response = client.get('api/v1/orders/4', headers=headers)
+    assert 'exist' in str(response.data)
+ def test_resource_order_edit(): 
+    """
+        Test edit by geting right id
+    """
+    response = client.put('api/v1/orders/1', data ={
+        "id": 5,
+        "food": "chips",
+        "quantity": 2, 
+        "price": 200,
+    response = client.put('api/v1/orders/1', json ={
+         "status": "completed"
+    })
+    }, headers=headers)
+    assert(response.status_code == 201)
+    assert 'completed' in str(response.data)
+ def test_resource_order_add_without_data(): 
+    """
+        Test post without data
+    """
+    response = client.post('api/v1/orders', data=empty_order, headers=headers)
+    assert response.status_code == 400
+ def test_resource_add_without_quantity():
+    """
+        Test post withot quantity
+    """
+    response = client.post('api/v1/orders', data=quantity_less_order, headers=headers)
+    assert response.status_code == 400
+ def test_resource_add_without_food():
+    """
+        Test post withot food
+    """
+    response = client.post('api/v1/orders', data=food_less_order, headers=headers)
+    assert response.status_code == 400 
+  
+2  instance/config.py
+@@ -1,13 +1,13 @@
+ 
+ import os 
+ 
+ class Config(object): 
+ 	"""
+ 	Base config
+	"""
+	DEBUG = False 
+	CSRF_ENABLED = True 
+	SECRET = os.getenv('SECRET')
+	SECRET_KEY = os.getenv('SECRET_KEY')
+ class DevelopmentConfig(Config):
+	"""
+ 		Config for development
+ 	"""
+ 	DEBUG = True
+ 
+ 
+ class TestingConfig(Config): 
+ 	"""
+ 		Testing config
+ 	"""
+ 	Testing = True
+ 	DEBUG = True
+ 
+ class ProductionConfig(Config): 
+ 	"""
+ 		Production config
+ 	"""
+ 	DEBUG = False 
+ 	Testing = False
+ 
+ 
+ app_config = {
+ 	'development': DevelopmentConfig, 
+ 	'production': ProductionConfig, 
+ 	'testing': TestingConfig,
+ }
