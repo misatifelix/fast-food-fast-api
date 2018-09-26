@@ -1,11 +1,9 @@
 Fast-Food-Fast-API
 FastFood API is a REST API that fetches that allows its user to order for food
 
-Coveralls
-Coverage Status
 
-Travis badge
-Build Status Maintainability
+
+
 
 Flask FAST FOOD FAST
 This is a Flask Restful API for an app that allows customers to place orders
