@@ -47,7 +47,7 @@ Endpoint	Method	description
 API Endpoints
 
 #Endpoint|  #Methods|  #Description| Auth Required|
-------------------------------------------------    
+---------|  --------|  ------------| -------------|
 
 /api/v1/foods|GET	|list all foods|	No
 
