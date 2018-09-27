@@ -1,6 +1,8 @@
 Fast-Food-Fast-API
 FastFood API is a REST API that fetches that allows its user to order for food
 
+Travis Badge
+
 [![Build Status](https://travis-ci.org/misatifelix/fast-food-fast-api.svg?branch=master)](https://travis-ci.org/misatifelix/fast-food-fast-api)
 
 
@@ -66,7 +68,7 @@ API Endpoints
 /api/v1/orders|GET|list all orders|No
 
 API DOCUMENTATION
-PostMan Docs
+
 
 
 Author
