@@ -5,6 +5,8 @@ Travis Badge
 
 [![Build Status](https://travis-ci.org/misatifelix/fast-food-fast-api.svg?branch=master)](https://travis-ci.org/misatifelix/fast-food-fast-api)
 
+[![Coverage Status](https://coveralls.io/repos/github/misatifelix/fast-food-fast-api/badge.png?branch=master)](https://coveralls.io/github/misatifelix/fast-food-fast-api?branch=master)
+
 
 This is a list of resources for people who are new to contributing to open source.
 
