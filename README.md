@@ -68,8 +68,6 @@ API Endpoints
 API DOCUMENTATION
 PostMan Docs
 
-HEROKU LINK
-HEROKU API
 
 Author
 Felix Misati
